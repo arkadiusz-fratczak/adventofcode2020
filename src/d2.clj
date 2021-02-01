@@ -1,6 +1,6 @@
 (ns d2
   (:require [clojure.string :as str]
-            [clojure.set :as set]))
+            [clojure.java.io :as io]))
 
 
 ;--- Day 2: Password Philosophy ---
@@ -33,6 +33,31 @@
        slurp
        str/split-lines
        (filter valid-password?)
+       count))
+
+(defn parse-line [line]
+  (let [[_ min max ch pwd] (re-matches #"(\d+)-(\d+) (\w): (\w+)" line)]
+    {:min (Integer/parseInt min)
+     :max (Integer/parseInt max)
+     :ch (nth ch 0)
+     :pwd pwd}))
+
+(defn read-database [filename]
+  (with-open [rdr (io/reader filename)]
+    (->> rdr
+         line-seq
+         (mapv parse-line))))
+
+(defn impr-valid-password? [{:keys [min max ch pwd]}]
+  (let [times (->> pwd
+                   (filter #(= ch %))
+                   count)]
+    (<= min times max)))
+
+(defn impr-answer []
+  (->> "resources/d2_input.txt"
+       read-database
+       (filter impr-valid-password?)
        count))
 
 ;--- Part Two ---
