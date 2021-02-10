@@ -1,6 +1,8 @@
 (ns d4
   (:require [clojure.java.io :as io]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.spec.alpha :as s]
+            [clojure.walk :as w]))
 
 ;--- Day 4: Passport Processing ---
 ;You arrive at the airport only to realize that you grabbed your North Pole Credentials instead of your passport. While these documents are extremely similar, North Pole Credentials aren't issued by a country and therefore aren't actually valid documentation for travel in most of the world.
@@ -40,14 +42,44 @@
 ;According to the above rules, your improved system would report 2 valid passports.
 ;Count the number of valid passports - those that have all required fields. Treat cid as optional. In your batch file, how many passports are valid?
 
+(s/def ::passport (s/keys :req-un [::byr ::iyr ::eyr ::hgt ::hcl ::ecl ::pid]))
+
 (defn read-passports [filename]
   (with-open [rdr (io/reader filename)]
     (reduce
       (fn [v line]
         (if (str/blank? line)
           (conj v {})
-          (conj (pop v) (merge (peek v) (apply hash-map (str/split line #"\s|:"))))))
+          (conj (pop v) (merge (peek v) (w/keywordize-keys (apply hash-map (str/split line #"\s|:")))))))
       [{}]
       (line-seq rdr))))
 
-(defn answer [])
+(defn answer []
+  (->> "resources/d4_input.txt"
+       read-passports
+       (filter #(s/valid? ::passport %))
+       count))
+
+;--- Part Two ---
+;The line is moving more quickly now, but you overhear airport security talking about how passports with invalid data are getting through. Better add some data validation, quick!
+;You can continue to ignore the cid field, but each other field has strict rules about what values are valid for automatic validation:
+;byr (Birth Year) - four digits; at least 1920 and at most 2002.
+;iyr (Issue Year) - four digits; at least 2010 and at most 2020.
+;eyr (Expiration Year) - four digits; at least 2020 and at most 2030.
+;hgt (Height) - a number followed by either cm or in:
+;If cm, the number must be at least 150 and at most 193.
+;If in, the number must be at least 59 and at most 76.
+;hcl (Hair Color) - a # followed by exactly six characters 0-9 or a-f.
+;ecl (Eye Color) - exactly one of: amb blu brn gry grn hzl oth.
+;pid (Passport ID) - a nine-digit number, including leading zeroes.
+;cid (Country ID) - ignored, missing or not.
+;Your job is to count the passports where all required fields are both present and valid according to the above rules.
+(s/def ::byr (s/and string? #(< 1919 (Integer/parseInt %) 2003)))
+(s/def ::iyr (s/and string? #(< 2009 (Integer/parseInt %) 2021)))
+(s/def ::eyr (s/and string? #(< 2019 (Integer/parseInt %) 2031)))
+(s/def ::hgt-cm (s/and string? #(str/ends-with? % "cm") #(< 149 (Integer/parseInt (str/replace % #"cm" "")) 194)))
+(s/def ::hgt-in (s/and string? #(str/ends-with? % "in") #(< 58 (Integer/parseInt (str/replace % #"in" "")) 77)))
+(s/def ::hgt (s/or :cm ::hgt-cm :in ::hgt-in))
+(s/def ::hcl #(re-matches #"#[0-9a-f]{6}" %))
+(s/def ::ecl #{"amb" "blu" "brn" "gry" "grn" "hzl" "oth"})
+(s/def ::pid #(re-matches #"\d{9}" %))
