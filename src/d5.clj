@@ -1,6 +1,7 @@
 (ns d5
   (:require [clojure.java.io :as io]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [clojure.string :as str]))
 
 ;--- Day 5: Binary Boarding ---
 ;You board your plane only to discover a new problem: you dropped your boarding pass! You aren't sure which seat is yours, and all of the flight attendants are busy with the flood of people that suddenly made it through passport control.
@@ -79,3 +80,27 @@
           :max (apply max d)}))
        ((fn [d]
          (set/difference (set (range (:min d) (:max d))) (:data d))))))
+
+;--- Improvements ---
+(defn read-data [filename]
+  (with-open [rdr (io/reader filename)]
+    (->> rdr
+         line-seq
+         vec)))
+
+(defn parse-seat-id [seat-id]
+  (-> seat-id
+      (str/replace #"F|L" "0")
+      (str/replace #"B|R" "1")
+      (Integer/parseInt 2)))
+
+(defn answer-impr []
+  (->> "resources/d5_input.txt"
+       read-data
+       (map parse-seat-id)
+       sort
+       (partition 2 1)
+       (filter (fn [[x z]] (= (inc x) (dec z))))
+       first
+       first
+       inc))
