@@ -76,10 +76,10 @@
        (map #(compute-seat-id %))
        ((fn [d]
           {:data (set d)
-          :min (apply min d)
-          :max (apply max d)}))
+           :min (apply min d)
+           :max (apply max d)}))
        ((fn [d]
-         (set/difference (set (range (:min d) (:max d))) (:data d))))))
+          (set/difference (set (range (:min d) (:max d))) (:data d))))))
 
 ;--- Improvements ---
 (defn read-data [filename]

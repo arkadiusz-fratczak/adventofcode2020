@@ -18,8 +18,8 @@
 
 (defn read-grouped-declarations [filename]
   (->> filename
-      slurp
-      (split #"\n\n")))
+       slurp
+       (split #"\n\n")))
 
 (defn answer []
   (->> "resources/d6.txt"

@@ -47,12 +47,12 @@
 (defn read-passports [filename]
   (with-open [rdr (io/reader filename)]
     (reduce
-      (fn [v line]
-        (if (str/blank? line)
-          (conj v {})
-          (conj (pop v) (merge (peek v) (w/keywordize-keys (apply hash-map (str/split line #"\s|:")))))))
-      [{}]
-      (line-seq rdr))))
+     (fn [v line]
+       (if (str/blank? line)
+         (conj v {})
+         (conj (pop v) (merge (peek v) (w/keywordize-keys (apply hash-map (str/split line #"\s|:")))))))
+     [{}]
+     (line-seq rdr))))
 
 (defn answer []
   (->> "resources/d4_input.txt"

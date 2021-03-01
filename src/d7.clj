@@ -1,7 +1,8 @@
 (ns d7
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.walk :as w]))
+            [clojure.walk :as w]
+            [clojure.set :as set]))
 
 ;--- Day 7: Handy Haversacks ---
 ;You land at the regional airport in time for your next flight. In fact, it looks like you'll even have time to grab some food: all flights are currently delayed due to issues in luggage processing.
@@ -29,8 +30,8 @@
 (defn parse-content [seq]
   (into {}
         (->> seq
-            (map #(str/split % #"\s"))
-            (map (fn [[k v]] [(keyword v) (Integer/parseInt k)])))))
+             (map #(str/split % #"\s"))
+             (map (fn [[k v]] [(keyword v) (Integer/parseInt k)])))))
 
 (defn parse-bag-rule [serialized]
   (->> serialized
@@ -44,8 +45,53 @@
     (->> rdr
          line-seq
          vec
-         (map parse-bag-rule)
-         (apply merge))))
+         (map parse-bag-rule))))
 
+(defn search-containers [bags bag-color]
+  (->> bags
+       (filter #(contains? (val (first %)) bag-color))
+       (map #(key (first %)))
+       set))
 
-(defn answer [])
+(defn search-all-containers
+  ([bags bag-color]
+   (search-all-containers bags bag-color #{}))
+  ([bags bag-color acc]
+   (let [direct-cont (search-containers bags bag-color)]
+     (if (empty? direct-cont)
+       (conj acc bag-color)
+       (conj (reduce #(set/union %1 (search-all-containers bags %2 #{}))
+                     acc
+                     direct-cont)
+             bag-color)))))
+
+(defn answer []                                             ; 229
+  (let [bag-rules (read-bag-rules "resources/d7.txt")]
+    (->> (search-all-containers bag-rules :shiny-gold)
+         count
+         dec)))
+
+;--- Part Two ---
+;It's getting pretty expensive to fly these days - not because of ticket prices, but because of the ridiculous number of bags you need to buy!
+;Consider again your shiny gold bag and the rules from the above example:
+;faded blue bags contain 0 other bags.
+;dotted black bags contain 0 other bags.
+;vibrant plum bags contain 11 other bags: 5 faded blue bags and 6 dotted black bags.
+;dark olive bags contain 7 other bags: 3 faded blue bags and 4 dotted black bags.
+;So, a single shiny gold bag must contain 1 dark olive bag (and the 7 bags within it) plus 2 vibrant plum bags (and the 11 bags within each of those): 1 + 1*7 + 2 + 2*11 = 32 bags!
+;Of course, the actual rules have a small chance of going several levels deeper than this example; be sure to count all of the bags, even if the nesting becomes topologically impractical!
+;How many individual bags are required inside your single shiny gold bag?
+
+(defn count-bags
+  [bag-color bags]
+  (let [comps (get bags bag-color)]
+    (if (empty? comps)
+      0
+      (reduce #(+ %1 (val %2) (* (val %2) (count-bags (key %2) bags)))
+              0
+              comps))))
+
+(defn answer2 []                                            ; 6683
+  (->> (read-bag-rules "resources/d7.txt")
+       (apply merge)
+       (count-bags :shiny-gold)))
