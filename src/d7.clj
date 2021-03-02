@@ -71,6 +71,15 @@
          count
          dec)))
 
+(defn sub-contains? [bags container own-color]
+  (->> container
+       bags
+       (some
+         (fn [[n color]]
+           (or
+             (= color own-color)
+             (sub-contains?  bags color own-color))))))
+
 ;--- Part Two ---
 ;It's getting pretty expensive to fly these days - not because of ticket prices, but because of the ridiculous number of bags you need to buy!
 ;Consider again your shiny gold bag and the rules from the above example:
